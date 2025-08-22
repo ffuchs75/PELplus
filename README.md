@@ -13,6 +13,10 @@ It was designed purely for **educational and analysis purposes**, **not** for pr
 > - The code is meant for developers, researchers, or students who want to study the internal workings of the POCSAG encryption.  
 > - There are no guarantees of correctness, confidentiality, integrity, or security.
 
+## Requirements
+
+- dotNetFramework 4.7 or higher
+
 ## Usage
 
 ```bash
@@ -34,10 +38,11 @@ PELplus.CLI --message "This is a test message."
 PELplus.CLI --key 0x000102...1e1f --keyindex 01 --time "2025-08-07 10:30:45" --message "Secret payload"
 PELplus.CLI --license
 
-PELplusCLI.exe --message "Probealarm, Leitstelle nicht anrufen" --key 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --time "2025-08-07 10:30:45" --keyindex 01
+PELplusCLI.exe --message "Probealarm, Leitstelle nicht anrufen" --key 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --time "2025-08-07 10:30:45"
 
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  PELplus – POCSAG Encryption                                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+  PELplus – POCSAG Encryption                                  
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 Message  : Probealarm, Leitstelle nicht anrufen
 UTC time : 2025-08-07 10:30:45
 KeyIndex : 01
@@ -49,8 +54,17 @@ IV (unpadded)       : d5fa1f0101
 IV (padded 32 bytes): d5fa1f0101000000000000000000000000000000000000000000000000000000
 
 ── Key derivation (CMAC-KDF) ─────────────────────────────────────────────────────
-Encryption Key: eb5d641c1f51a034039549c1389a1a1db5a3b62a68471a47234d689c513ff244
-CMAC Key      : 659f4c8e1743b17e8a5a95d72c2a91b174e7e21bb737ff4acf0acbeb3678d671
+PRKhi         : 9689a6e10c4a14d726d6e0ec56d2e22b
+PRKlo         : 2ef2e7acca205cbfb55f924f5b9a5bca
+PRK           : 9689a6e10c4a14d726d6e0ec56d2e22b2ef2e7acca205cbfb55f924f5b9a5bca
+------------------------------------------------------------
+EncKeyhi      : eedeaba836d9eb1584d6e4e11765c20f
+EncKeylo      : 3b7777579cbbf0c8df6c9202894b5633
+Encryption Key: eedeaba836d9eb1584d6e4e11765c20f3b7777579cbbf0c8df6c9202894b5633
+------------------------------------------------------------
+CmacKeyhi     : 1a6220a89cffa76f327bda8e4cb4c9ec
+CmacKeylo     : 19013556e2753eb1f23f7744b603b0e5
+CMAC Key      : 1a6220a89cffa76f327bda8e4cb4c9ec19013556e2753eb1f23f7744b603b0e5
 
 ── Plaintext & compression ─────────────────────────────────────────────────────
 Plaintext bytes (hex)    : 50726f6265616c61726d2c204c6569747374656c6c65206e6963687420616e727566656e
@@ -59,30 +73,30 @@ Compressed + padded (hex): 0a9fda3a70cdc34f6cd02334e597ce5e99b374c13b978c597050d
 
 ── AES-CTR details (all blocks) ─────────────────────────────────────────────────────
 Counter[0]          : d5fa1f01010000000000000000000000
-Keystream[0]        : 4d8f0e62f4bb16dd6e8b31c24bc9aa3a
+Keystream[0]        : 307d22c8181de78b1182a75112f3aed8
 Plaintext[0]        : 0a9fda3a70cdc34f6cd02334e597ce5e
-CipherTextPortion[0]: 4710d4588476d592025b12f6ae5e6464
+CipherTextPortion[0]: 3ae2f8f268d024c47d528465f7646086
 ------------------------------------------------------------
 Counter[1]          : d5fa1f01010000000000000000000001
-Keystream[1]        : 085b09c4e72c96d58bd889d7fe692093
+Keystream[1]        : c790166c13618592e181fdcbf1a7d192
 Plaintext[1]        : 99b374c13b978c597050dda7aece9bb0
-CipherTextPortion[1]: 91e87d05dcbb1a8cfb88547050a7bb23
+CipherTextPortion[1]: 5e2362ad28f609cb91d1206c5f694a22
 ------------------------------------------------------------
 Counter[2]          : d5fa1f01010000000000000000000002
-Keystream[2]        : d068f2e436b9ab5222f4eddbc59f436a
+Keystream[2]        : 9c85deb5db7caa84d44bdd0517dd1799
 Plaintext[2]        : 000000
-CipherTextPortion[2]: d068f2
+CipherTextPortion[2]: 9c85de
 ------------------------------------------------------------
-Ciphertext (hex): 4710d4588476d592025b12f6ae5e646491e87d05dcbb1a8cfb88547050a7bb23d068f2
+Ciphertext (hex): 3ae2f8f268d024c47d528465f76460865e2362ad28f609cb91d1206c5f694a229c85de
 
 ── Checksums ─────────────────────────────────────────────────────
-CMAC (128-bit, hex) over ciphertext: e713360d23286bf95df8def8a4629a43
+CMAC (128-bit, hex) over ciphertext: 81256a9a2c8267023bf33a4d9dd7c13c
 CRC-8 over IV                      : e8
 
 ── Transmission ─────────────────────────────────────────────────────
-TX (hex)      : d5fa1f0101e8e713360d4710d4588476d592025b12f6ae5e646491e87d05dcbb1a8cfb88547050a7bb23d068f2
-POCSAG Numeric: U*[58[0808717]8  60U2]80U2*112]6U*9404*-84[657*762629871]U0*U3--8513[-11*2]0*05]--4 U061[4
-Base64        : 1fofAQHo5xM2DUcQ1FiEdtWSAlsS9q5eZGSR6H0F3LsajPuIVHBQp7sj0Gjy
+TX (hex)      : d5fa1f0101e881256a9a3ae2f8f268d024c47d528465f76460865e2362ad28f609cb91d1206c5f694a229c85de
+POCSAG Numeric: U*[58[080871184*6595 574[1[461U04232]U*4126*[]626016*74 645U41[6093-98U84063*[692544931*U7
+Base64        : 1fofAQHogSVqmjri+PJo0CTEfVKEZfdkYIZeI2KtKPYJy5HRIGxfaUoinIXe
 
 Done.
 ```

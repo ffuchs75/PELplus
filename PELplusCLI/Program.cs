@@ -88,10 +88,28 @@ namespace PELplusCLI
                 CmacKdf kdf = new CmacKdf(keyHex, ivPaddedHex);
                 string encKeyHex = HexConverter.ByteArrayToHexString(kdf.EncryptionKey).ToLowerInvariant();
                 string cmacKeyHex = HexConverter.ByteArrayToHexString(kdf.CmacKey).ToLowerInvariant();
+                string prkHi = HexConverter.ByteArrayToHexString(kdf.Cmac1a).ToLowerInvariant();
+                string prkLo = HexConverter.ByteArrayToHexString(kdf.Cmac1b).ToLowerInvariant();
+                string prk = HexConverter.ByteArrayToHexString(kdf.Prk).ToLowerInvariant();
+                string encKeyHi = HexConverter.ByteArrayToHexString(kdf.T1).ToLowerInvariant();
+                string encKeyLo = HexConverter.ByteArrayToHexString(kdf.T2).ToLowerInvariant();
+                string cmacKeyHi = HexConverter.ByteArrayToHexString(kdf.T3).ToLowerInvariant();
+                string cmacKeyLo = HexConverter.ByteArrayToHexString(kdf.T4).ToLowerInvariant();
+
 
                 PrintSection("Key derivation (CMAC-KDF)");
+                PrintKV("PRKhi         ", prkHi);
+                PrintKV("PRKlo         ", prkLo);
+                PrintKV("PRK           ", prk);
+                Console.WriteLine(new string('-', 60));
+                PrintKV("EncKeyhi      ", encKeyHi);
+                PrintKV("EncKeylo      ", encKeyLo);
                 PrintKV("Encryption Key", encKeyHex);
-                PrintKV("CMAC Key      ", cmacKeyHex);
+                Console.WriteLine(new string('-', 60));
+                PrintKV("CmacKeyhi     ", cmacKeyHi);
+                PrintKV("CmacKeylo     ", cmacKeyLo);
+                PrintKV("CMAC Key      ", cmacKeyHex);              
+                
 
                 // -------- 4) UTF-8 encode & compress plaintext --------
                 // IMPORTANT: we print both raw UTF-8 hex and compressed hex for full transparency.

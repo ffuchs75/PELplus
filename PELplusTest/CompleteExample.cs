@@ -20,21 +20,21 @@ namespace PELplusTest
         private readonly string clearText = "Probealarm, Leitstelle nicht anrufen";
         private readonly string expectedClearTextBytes = "50726f6265616c61726d2c204c6569747374656c6c65206e6963687420616e727566656e";
         private readonly string expectedCompressClearTextBytes = "0a9fda3a70cdc34f6cd02334e597ce5e99b374c13b978c597050dda7aece9bb0";
-        private readonly string expectedEncryptionKey = "eb5d641c1f51a034039549c1389a1a1db5a3b62a68471a47234d689c513ff244";
-        private readonly string expectedCmacKey = "659f4c8e1743b17e8a5a95d72c2a91b174e7e21bb737ff4acf0acbeb3678d671";
+        private readonly string expectedEncryptionKey = "eedeaba836d9eb1584d6e4e11765c20f3b7777579cbbf0c8df6c9202894b5633";
+        private readonly string expectedCmacKey = "1a6220a89cffa76f327bda8e4cb4c9ec19013556e2753eb1f23f7744b603b0e5";
         private readonly string expectedCompressedPadded = "0a9fda3a70cdc34f6cd02334e597ce5e99b374c13b978c597050dda7aece9bb0000000";
-        private readonly string expectedCipherBytes = "4710d4588476d592025b12f6ae5e646491e87d05dcbb1a8cfb88547050a7bb23d068f2";
+        private readonly string expectedCipherBytes = "3ae2f8f268d024c47d528465f76460865e2362ad28f609cb91d1206c5f694a229c85de";
         private readonly string expectedCounter0 = "d5fa1f01010000000000000000000000";
         private readonly string expectedCounter1 = "d5fa1f01010000000000000000000001";
         private readonly string expectedCounter2 = "d5fa1f01010000000000000000000002";
-        private readonly string expectedKeyStream0 = "4d8f0e62f4bb16dd6e8b31c24bc9aa3a";
-        private readonly string expectedKeyStream1 = "085b09c4e72c96d58bd889d7fe692093";
-        private readonly string expectedKeyStream2 = "d068f2e436b9ab5222f4eddbc59f436a";
-        private readonly string expectedCmac = "e713360d23286bf95df8def8a4629a43";
+        private readonly string expectedKeyStream0 = "307d22c8181de78b1182a75112f3aed8";
+        private readonly string expectedKeyStream1 = "c790166c13618592e181fdcbf1a7d192";
+        private readonly string expectedKeyStream2 = "9c85deb5db7caa84d44bdd0517dd1799";
+        private readonly string expectedCmac = "81256a9a2c8267023bf33a4d9dd7c13c";
         private readonly string expectedCrc = "e8";
-        private readonly string expectedTransmission = "d5fa1f0101e8e713360d4710d4588476d592025b12f6ae5e646491e87d05dcbb1a8cfb88547050a7bb23d068f2";
-        private readonly string expectedTransmissionNumeric = "U*[58[0808717]8  60U2]80U2*112]6U*9404*-84[657*762629871]U0*U3--8513[-11*2]0*05]--4 U061[4";
-        private readonly string expectedTransmissionBase64 = "1fofAQHo5xM2DUcQ1FiEdtWSAlsS9q5eZGSR6H0F3LsajPuIVHBQp7sj0Gjy";
+        private readonly string expectedTransmission = "d5fa1f0101e881256a9a3ae2f8f268d024c47d528465f76460865e2362ad28f609cb91d1206c5f694a229c85de";
+        private readonly string expectedTransmissionNumeric = "U*[58[080871184*6595 574[1[461U04232]U*4126*[]626016*74 645U41[6093-98U84063*[692544931*U7";
+        private readonly string expectedTransmissionBase64 = "1fofAQHogSVqmjri+PJo0CTEfVKEZfdkYIZeI2KtKPYJy5HRIGxfaUoinIXe";
 
 
 

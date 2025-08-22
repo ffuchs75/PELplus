@@ -59,11 +59,11 @@ public sealed class CmacKdf
     /// </summary>
     /// <param name="masterKey">
     /// 256-bit master key as byte[] or hex string.
-    /// Used as "IKM" in HKDF terminology, here called "RIC key".
+    /// Used as "salt" in HKDF terminology, here called "RIC key".
     /// </param>
     /// <param name="iv">
     /// Optional 256-bit IV as byte[] or hex string.
-    /// Used as "salt" in HKDF terminology; if omitted, masterKey is used.
+    /// Used as "IKM" in HKDF terminology; if omitted, masterKey is used.
     /// </param>
     public CmacKdf(object masterKey, object iv = null)
     {
@@ -75,11 +75,11 @@ public sealed class CmacKdf
         // EXTRACT PHASE (custom CMAC variant)
         // -----------------------
 
-        // Step 1a: Cmac1a = PRF(IV, masterKey)
-        Cmac1a = new AesCmac(ivBytes, keyBytes).Mac;
+        // Step 1a: Cmac1a = PRF(masterKey, IV)
+        Cmac1a = new AesCmac(keyBytes, ivBytes).Mac;
 
-        // Step 1b: Cmac1b = PRF(IV, Cmac1a || 0x00)
-        Cmac1b = new AesCmac(ivBytes, Concat(Cmac1a, new byte[] { 0x00 })).Mac;
+        // Step 1b: Cmac1b = PRF(masterKey, Cmac1a || 0x00)
+        Cmac1b = new AesCmac(keyBytes, Concat(Cmac1a, new byte[] { 0x00 })).Mac;
 
         // PRK = Cmac1a || Cmac1b (32 bytes)
         Prk = Concat(Cmac1a, Cmac1b);
