@@ -97,4 +97,47 @@ public static class HexConverter
     {
         return b.ToString(uppercase ? "X2" : "x2");
     }
+
+
+    /// <summary>
+    /// Converts a hexadecimal string into its byte value.
+    /// Accepts "A3", "a3", "0x0A", "0Xa3", with or without whitespace.
+    /// </summary>
+    /// <param name="hex">Hex string representing one byte (e.g., "A3" or "0x0A").</param>
+    /// <returns>Byte value (0–255).</returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown if <paramref name="hex"/> is null, empty,
+    /// cannot be parsed as exactly one byte (00–FF),
+    /// or contains invalid hex digits.
+    /// </exception>
+    public static byte HexToByte(string hex)
+    {
+        if (string.IsNullOrWhiteSpace(hex))
+            throw new ArgumentException("Input cannot be null or empty.", nameof(hex));
+
+        // Trim whitespace
+        string normalized = hex.Trim();
+
+        // Allow optional "0x"/"0X" prefix
+        if (normalized.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+            normalized = normalized.Substring(2);
+
+        // Now it must be exactly 2 hex chars
+        if (normalized.Length != 2)
+            throw new ArgumentException("Hex string must represent exactly one byte (2 hex digits).", nameof(hex));
+
+        try
+        {
+            return Convert.ToByte(normalized, 16);
+        }
+        catch (FormatException)
+        {
+            throw new ArgumentException("Input contains non-hexadecimal characters.", nameof(hex));
+        }
+        catch (OverflowException)
+        {
+            throw new ArgumentException("Input is out of range for a byte.", nameof(hex));
+        }
+    }
+
 }

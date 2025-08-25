@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PELplus.Crypto.Encryption;
+using System;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
@@ -24,6 +25,28 @@ namespace PELplusCLI
                 // -------- Parse CLI arguments --------
                 Params p = ParseArgs(args);
 
+                // -------- Decrypt mode: ONLY --message and --key are allowed --------
+                if (p.Decrypt)
+                {
+                    // Enforce exclusivity: no other flags allowed in decrypt mode
+                    if (p.ShowHelp || p.ShowLicense || !string.IsNullOrWhiteSpace(p.KeyIndexHex) || p.UtcTime.HasValue)
+                        throw new ArgumentException("In --decrypt mode, only --message and --key are allowed.");
+
+                    if (string.IsNullOrWhiteSpace(p.Message))
+                    {
+                        Error("Parameter --message is required in --decrypt mode.");
+                        PrintUsage();
+                        return 2;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(p.KeyHex))
+                        throw new ArgumentException("Parameter --key is required in --decrypt mode.");
+
+                    // Call decrypt() and exit
+                    decrypt(p.Message, ValidateFixedLengthHex(p.KeyHex, 32));
+                    return 0;
+                }
+
                 if (p.ShowHelp)
                 {
                     PrintUsage();
@@ -35,7 +58,6 @@ namespace PELplusCLI
                     PrintLicense();
                     return 0;
                 }
-
 
                 if (string.IsNullOrWhiteSpace(p.Message))
                 {
@@ -67,126 +89,49 @@ namespace PELplusCLI
                 PrintKV("KeyIndex ", keyIndexHex);
                 PrintKV("Key (hex)", keyHex);
 
+                Encrypt encrypt = new Encrypt(message, keyHex, keyIndexHex, utcTime);
+
                 // -------- 1) Timestamp for IV (little-endian hex) --------
-                Epoch2025Timestamp ts = new Epoch2025Timestamp(utcTime);
-                string timestampLE = ts.BytesLittleEndianHex; // 4 bytes -> 8 hex chars
                 PrintSection("Timestamp / IV base");
-                PrintKV("Timestamp LE (hex)  ", timestampLE);
+                PrintKV("Timestamp LE (hex)  ", encrypt.Epoch2025Timestamp.BytesLittleEndianHex);
 
                 // -------- 2) Build IV (unpadded) and then pad to 32 bytes --------
-                // Unpadded IV = timestampLE || keyIndex
-                string ivUnpaddedHex = timestampLE + keyIndexHex;
-
-                // Pad IV to 32 bytes (right pad with 0x00) – required by KDF input
-                BytePadRight ivPad = new BytePadRight(ivUnpaddedHex, 32);
-                string ivPaddedHex = ivPad.PaddedHex;
-
-                PrintKV("IV (unpadded)       ", ivUnpaddedHex);
-                PrintKV("IV (padded 32 bytes)", ivPaddedHex);
+                PrintKV("IV (unpadded)       ", encrypt.IvHex);
+                PrintKV("IV (padded 32 bytes)", encrypt.IvPadded);
 
                 // -------- 3) Derive keys via CMAC-KDF (enc key + cmac key) --------
-                CmacKdf kdf = new CmacKdf(keyHex, ivPaddedHex);
-                string encKeyHex = HexConverter.ByteArrayToHexString(kdf.EncryptionKey).ToLowerInvariant();
-                string cmacKeyHex = HexConverter.ByteArrayToHexString(kdf.CmacKey).ToLowerInvariant();
-                string prkHi = HexConverter.ByteArrayToHexString(kdf.Cmac1a).ToLowerInvariant();
-                string prkLo = HexConverter.ByteArrayToHexString(kdf.Cmac1b).ToLowerInvariant();
-                string prk = HexConverter.ByteArrayToHexString(kdf.Prk).ToLowerInvariant();
-                string encKeyHi = HexConverter.ByteArrayToHexString(kdf.T1).ToLowerInvariant();
-                string encKeyLo = HexConverter.ByteArrayToHexString(kdf.T2).ToLowerInvariant();
-                string cmacKeyHi = HexConverter.ByteArrayToHexString(kdf.T3).ToLowerInvariant();
-                string cmacKeyLo = HexConverter.ByteArrayToHexString(kdf.T4).ToLowerInvariant();
 
-
-                PrintSection("Key derivation (CMAC-KDF)");
-                PrintKV("PRKhi         ", prkHi);
-                PrintKV("PRKlo         ", prkLo);
-                PrintKV("PRK           ", prk);
-                Console.WriteLine(new string('-', 60));
-                PrintKV("EncKeyhi      ", encKeyHi);
-                PrintKV("EncKeylo      ", encKeyLo);
-                PrintKV("Encryption Key", encKeyHex);
-                Console.WriteLine(new string('-', 60));
-                PrintKV("CmacKeyhi     ", cmacKeyHi);
-                PrintKV("CmacKeylo     ", cmacKeyLo);
-                PrintKV("CMAC Key      ", cmacKeyHex);              
-                
+                // Print KDF details exactly as before; also expose enc/cmac key hex for later use
+                string encKeyHex, cmacKeyHex;
+                PrintKdfOverview(encrypt.CmacKdf, out encKeyHex, out cmacKeyHex);
 
                 // -------- 4) UTF-8 encode & compress plaintext --------
                 // IMPORTANT: we print both raw UTF-8 hex and compressed hex for full transparency.
-                byte[] clearBytes = Encoding.UTF8.GetBytes(message);
-                string clearHex = HexConverter.ByteArrayToHexString(clearBytes).ToLowerInvariant();
-
-                byte[] compressedBytes = Compress.FromByteArray(clearBytes);
-                string compressedHex = HexConverter.ByteArrayToHexString(compressedBytes).ToLowerInvariant();
-
                 PrintSection("Plaintext & compression");
-                PrintKV("Plaintext bytes (hex)    ", clearHex);
-                PrintKV("Compressed bytes (hex)   ", compressedHex);
+                PrintKV("Plaintext bytes (hex)    ", encrypt.PlainTextBytesHex);
+                PrintKV("Compressed bytes (hex)   ", encrypt.CompressedPlainTextBytesHex);
+                PrintKV("Compressed + padded (hex)", encrypt.CompressedPlainTextBytesPaddedHex);
 
-                // -------- 5) Right-pad compressed bytes to a multiple of 5 --------
-                // Rationale: POCSAG payload uses 40-bit blocks (5 bytes).
-                int paddedLen = (int)Math.Ceiling(compressedBytes.Length / 5.0) * 5;
-                BytePadRight padPayload = new BytePadRight(compressedBytes, paddedLen);
-                string payloadPaddedHex = padPayload.PaddedHex.ToLowerInvariant();
-
-                PrintKV("Compressed + padded (hex)", payloadPaddedHex);
-
-                // -------- 6) AES-CTR encryption --------
-                // NOTE: Your AesCtrEncrypt constructor takes (encKeyHex, ivUnpaddedHex, paddedBytes).
-                // It also exposes Blocks[] with CounterBlock + KeystreamBlock (for visualization).
-                AesCtrEncrypt aes = new AesCtrEncrypt(encKeyHex, ivUnpaddedHex, padPayload.PaddedBytes);
-
+                // -------- 5) AES-CTR encryption --------
                 PrintSection("AES-CTR details (all blocks)");
-                // Print EVERY block (counter & keystream) to support arbitrarily long messages.
-                int blockCount = aes.Blocks.Count();
-                for (int i = 0; i < blockCount; i++)
-                {
-                    string counterHex = HexConverter.ByteArrayToHexString(aes.Blocks[i].CounterBlock).ToLowerInvariant();
-                    string ksHex = HexConverter.ByteArrayToHexString(aes.Blocks[i].KeystreamBlock).ToLowerInvariant();
-                    string cipherTextPortion = HexConverter.ByteArrayToHexString(aes.Blocks[i].CiphertextPortion).ToLowerInvariant();
-                    string plainTextPortion = HexConverter.ByteArrayToHexString(aes.Blocks[i].PlaintextPortion).ToLowerInvariant();
+                PrintAesBlocks(encrypt.AesCtrEncrypt); // centralize identical per-block printing logic
 
-                    // Use a compact, aligned output; large messages remain readable.
-                    PrintKV(string.Format("Counter[{0}]          ", i), counterHex);
-                    PrintKV(string.Format("Keystream[{0}]        ", i), ksHex);
-                    PrintKV(string.Format("Plaintext[{0}]        ", i), plainTextPortion);
-                    PrintKV(string.Format("CipherTextPortion[{0}]", i), cipherTextPortion);
+                PrintKV("Ciphertext (hex)", encrypt.AesCtrEncrypt.CiphertextHex);
 
-                    // Separator line for readability between blocks
-                    Console.WriteLine(new string('-', 60));
-                }
-
-                string cipherHex = aes.CiphertextHex.ToLowerInvariant();
-                PrintKV("Ciphertext (hex)", cipherHex);
-
-                // -------- 7) CMAC over ciphertext (Encrypt-then-MAC) --------
-                // We authenticate the ciphertext (and MAC is printed in full 128-bit form).
-                AesCmac cmac = new AesCmac(cmacKeyHex, aes.Ciphertext);
-                string macHex = HexConverter.ByteArrayToHexString(cmac.Mac).ToLowerInvariant();
-
+                // -------- 6) CMAC over ciphertext (Encrypt-then-MAC) --------
                 PrintSection("Checksums");
-                PrintKV("CMAC (128-bit, hex) over ciphertext", macHex);
+                PrintKV("CMAC (128-bit, hex) over ciphertext", HexConverter.ByteArrayToHexString(encrypt.AesCmac.Mac).ToLower());
 
-                // -------- 8) CRC-8 over UNPADDED IV --------
-                // CRC8 is computed over ivUnpaddedHex.
-                byte crcByte = Crc8.Compute(ivUnpaddedHex);
-                string crcHex = HexConverter.ByteToHex(crcByte).ToLowerInvariant();
-                PrintKV("CRC-8 over IV                      ", crcHex);
+                // -------- 7) CRC-8 over UNPADDED IV --------
+                PrintKV("CRC-8 over IV                      ", encrypt.CrcHex);
 
-                // -------- 9) Transmission composition --------
-                // TX = IV(unpadded) || CRC || MAC[0..3] || Ciphertext
-                string macFirst8 = macHex.Substring(0, 8);
-                string transmissionHex = (ivUnpaddedHex + crcHex + macFirst8 + cipherHex).ToLowerInvariant();
-
+                // -------- 8) Transmission composition --------
                 PrintSection("Transmission");
-                PrintKV("TX (hex)      ", transmissionHex);
+                PrintKV("TX (hex)      ", encrypt.TransmissionHex);
 
-                // -------- 10) Extra views: POCSAG Numeric + Base64 --------
-                PocsagNumericEncoder numeric = new PocsagNumericEncoder(transmissionHex);
-                string base64 = Convert.ToBase64String(HexConverter.HexStringToByteArray(transmissionHex));
-
-                PrintKV("POCSAG Numeric", numeric.NumericText);
-                PrintKV("Base64        ", base64);
+                // -------- 9) Extra views: POCSAG Numeric + Base64 --------
+                PrintKV("POCSAG Numeric", encrypt.TransmissionPocsagNumeric);
+                PrintKV("Base64        ", encrypt.TransmissionBase64);
 
                 PrintFooter("Done.");
                 return 0;
@@ -208,17 +153,19 @@ namespace PELplusCLI
             public string Message;      // required
             public bool ShowHelp;       // -h/--help
             public bool ShowLicense;    // --license
+            public bool Decrypt;        // --decrypt
         }
 
         private static Params ParseArgs(string[] args)
         {
             /*
              * Supported flags:
-             *   --key <hex>                 32-byte hex key; accepts "0x" and spaces
-             *   --keyindex <hex2>           one byte hex (default "01")
+             *   --key <hex>                   32-byte hex key; accepts "0x" and spaces
+             *   --keyindex <hex2>             one byte hex (default "01")
              *   --time "YYYY-MM-DD HH:mm:ss"  UTC time; default now
-             *   --message "<text>"          required
-             *   -h | --help                 show usage
+             *   --message "<text>"            required
+             *   --decrypt                     decrypt mode (only with --message and --key)
+             *   -h | --help                   show usage
              *
              * NOTE:
              * - We also allow a trailing positional argument for message if not set yet,
@@ -239,6 +186,12 @@ namespace PELplusCLI
                 else if (a == "--license")
                 {
                     p.ShowLicense = true;
+                    i++;
+                    continue;
+                }
+                else if (a == "--decrypt")
+                {
+                    p.Decrypt = true;
                     i++;
                     continue;
                 }
@@ -321,6 +274,32 @@ namespace PELplusCLI
         }
 
         /// <summary>
+        /// Validate a provided hex string to be exactly lenBytes long (no auto-generation).
+        /// Returns normalized lower-case hex.
+        /// </summary>
+        private static string ValidateFixedLengthHex(string maybeHex, int lenBytes)
+        {
+            string h = NormalizeHex(maybeHex);
+            if (string.IsNullOrWhiteSpace(h))
+                throw new ArgumentException("Required hex value is missing.");
+
+            if (h.Length != lenBytes * 2)
+                throw new ArgumentException("Key must be " + lenBytes + " bytes (" + (lenBytes * 2) + " hex chars).");
+
+            for (int i = 0; i < h.Length; i++)
+            {
+                char c = h[i];
+                bool ok =
+                    (c >= '0' && c <= '9') ||
+                    (c >= 'a' && c <= 'f') ||
+                    (c >= 'A' && c <= 'F');
+                if (!ok)
+                    throw new ArgumentException("Key contains invalid hex characters.");
+            }
+            return h.ToLowerInvariant();
+        }
+
+        /// <summary>
         /// If hex is missing: generate a cryptographically strong random key of lenBytes.
         /// If provided: normalize and validate length + characters.
         /// </summary>
@@ -329,12 +308,12 @@ namespace PELplusCLI
             if (string.IsNullOrWhiteSpace(maybeHex))
             {
                 byte[] key = new byte[lenBytes];
-                
+
                 using (var rng = RandomNumberGenerator.Create())
                 {
                     rng.GetBytes(key);
                 }
-                return HexConverter.ByteArrayToHexString(key).ToLowerInvariant();
+                return LowerHex(HexConverter.ByteArrayToHexString(key));
             }
 
             string h = NormalizeHex(maybeHex);
@@ -362,17 +341,19 @@ namespace PELplusCLI
             Console.WriteLine();
             Console.WriteLine("Usage:");
             Console.WriteLine("  PELplus.CLI --message \"<text>\" [--key <hex32bytes>] [--keyindex <hex2>] [--time \"YYYY-MM-DD HH:mm:ss\"]");
+            Console.WriteLine("  PELplus.CLI --decrypt --message \"<text>\" --key <hex32bytes>   (only these two flags allowed)");
             Console.WriteLine("  PELplus.CLI --help");
             Console.WriteLine("  PELplus.CLI --license");
             Console.WriteLine();
             Console.WriteLine("Defaults:");
-            Console.WriteLine("  --key       random 32-byte key (hex)");
-            Console.WriteLine("  --keyindex  01");
-            Console.WriteLine("  --time      now (UTC)");
+            Console.WriteLine("  --key       random 32-byte key (hex)   [encrypt mode only]");
+            Console.WriteLine("  --keyindex  01                         [encrypt mode only]");
+            Console.WriteLine("  --time      now (UTC)                  [encrypt mode only]");
             Console.WriteLine();
             Console.WriteLine("Examples:");
             Console.WriteLine("  PELplus.CLI --message \"This is a test message.\"");
             Console.WriteLine("  PELplus.CLI --key 0x000102...1e1f --keyindex 01 --time \"2025-08-07 10:30:45\" --message \"This is a ...\"");
+            Console.WriteLine("  PELplus.CLI --decrypt --message \"...\" --key 0x000102...1e1f");
             Console.WriteLine("  PELplus.CLI --license");
             Console.WriteLine();
         }
@@ -452,5 +433,193 @@ namespace PELplusCLI
             Console.WriteLine();
         }
 
+        // =============================== Decrypt stub ===============================
+        /// <summary>
+        /// Decrypt mode entry point. 
+        /// </summary>
+        private static void decrypt(string message, string keyHex)
+        {
+            // -------- Pretty header --------
+            PrintTitle("PELplus – POCSAG Encryption");
+            PrintKV("Message  ", message);
+            PrintKV("Key (hex)", keyHex);
+
+            PrintSection("Extract parameters from transmission");
+            Transmission transmission = new Transmission(message);
+
+            PrintKV("Transmission type    ", transmission.EncodingType.ToString());
+
+            // if the message is not encrypted, exit
+            if (transmission.EncodingType == TransmissionEncoding.Unencrypted)
+            {
+                return;
+            }
+
+            PrintKV("Complete Transmission", transmission.RawFrameHex);
+            PrintKV("IV unpadded          ", transmission.IvUnpaddedHex);
+            PrintKV("IV padded            ", transmission.IvPaddedHex);
+            PrintKV("Timestamp            ", transmission.TimestampHex);
+            PrintKV("Timestamp UTC        ", transmission.TimestampUtc.ToString());
+            PrintKV("Timestamp Local      ", transmission.TimestampLocal.ToString());
+            PrintKV("Key Index            ", transmission.KeyIndexHex);
+            PrintKV("Transmitted Crc8     ", transmission.TransmittedCrc8Hex);
+            PrintKV("Actual Crc8          ", transmission.ActualCrc8Hex);
+            PrintKV("Has Valid Crc8       ", transmission.HasValidCrc8.ToString());
+            PrintKV("Transmitted CMAC     ", transmission.MacTruncHex);
+            PrintKV("Cipher Text          ", transmission.CiphertextHex);
+
+            // check if the crc is valid
+            if (transmission.HasValidCrc8 == false)
+            {
+                Console.WriteLine("\nSince the CRC8 is void, treat the message as unencrypted.");
+                return;
+            }
+
+            // -------- 2) Derive keys via CMAC-KDF (enc key + cmac key) --------
+            CmacKdf kdf = new CmacKdf(keyHex, transmission.IvPaddedHex);
+
+            // Print KDF and expose enc/cmac key hex
+            string encKeyHex, cmacKeyHex;
+            PrintKdfOverview(kdf, out encKeyHex, out cmacKeyHex);
+
+            try
+            {
+                // decrypt
+                Decrypt decrypt = new Decrypt(message, keyHex);
+
+                // -------- 3) Decrypt --------
+                PrintSection("Decryption");
+
+                // Print EVERY block (counter & keystream) to support arbitrarily long messages.
+                PrintAesBlocks(decrypt.AesCtrDecrypt, true);
+
+                PrintKV("Plaintext HEX             ", decrypt.AesCtrDecrypt.CiphertextHex);
+
+                // uncompress
+                PrintKV("Plaintext HEX uncompressed", decrypt.PlainTextBytesHex.ToLower());
+
+                // get text
+                PrintKV("Plaintext                 ", decrypt.PlainText);
+
+                // -------- 4) CMAC --------
+                // CMAC
+                PrintSection("CMAC");
+                AesCmac aesCmac = new AesCmac(cmacKeyHex, transmission.CiphertextHex);
+
+                // Compute once, reuse (avoids duplicate conversions and substring twice)
+                string macFullLower = LowerHex(HexConverter.ByteArrayToHexString(aesCmac.Mac));
+                string macTruncLower = macFullLower.Substring(0, 8);
+
+                PrintKV("Actual CMAC               ", macTruncLower);
+
+                bool hasValidCmac = macTruncLower == transmission.MacTruncHex;
+                PrintKV("Has Valid CMAC            ", hasValidCmac.ToString());
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine();
+                Console.WriteLine(ex.Message);
+                Console.WriteLine("Treat the message as unencrypted.");
+            }
+
+            PrintFooter("Done.");
+        }
+
+        // =============================== Small helpers to remove duplication ===============================
+
+        /// <summary>
+        /// Convert a byte[] to lowercase hex using the project's HexConverter,
+        /// ensuring one canonical representation across the codebase.
+        /// </summary>
+        private static string LowerHex(byte[] bytes)
+        {
+            // Using ToLowerInvariant() avoids culture-specific casing rules.
+            return HexConverter.ByteArrayToHexString(bytes).ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Ensure a hex string is lowercase (no-op for null).
+        /// </summary>
+        private static string LowerHex(string hex)
+        {
+            return hex == null ? null : hex.ToLowerInvariant();
+        }
+
+        /// <summary>
+        /// Print the full CMAC-KDF derivation details EXACTLY like before
+        /// and hand back the two operational keys as lowercase hex.
+        /// 
+        /// Why safe:
+        /// - We only factor out previously duplicated computations/prints.
+        /// - Output order, separators, and labels are preserved 1:1.
+        /// </summary>
+        private static void PrintKdfOverview(CmacKdf kdf, out string encKeyHex, out string cmacKeyHex)
+        {
+            // Precompute all values once, then print.
+            string prkHi = LowerHex(kdf.Cmac1a);
+            string prkLo = LowerHex(kdf.Cmac1b);
+            string prk = LowerHex(kdf.Prk);
+            string encKeyHi = LowerHex(kdf.T1);
+            string encKeyLo = LowerHex(kdf.T2);
+            string cmacKeyHi = LowerHex(kdf.T3);
+            string cmacKeyLo = LowerHex(kdf.T4);
+
+            encKeyHex = LowerHex(kdf.EncryptionKey);
+            cmacKeyHex = LowerHex(kdf.CmacKey);
+
+            PrintSection("Key derivation (CMAC-KDF)");
+            PrintKV("PRKhi         ", prkHi);
+            PrintKV("PRKlo         ", prkLo);
+            PrintKV("PRK           ", prk);
+            Console.WriteLine(new string('-', 60));
+            PrintKV("EncKeyhi      ", encKeyHi);
+            PrintKV("EncKeylo      ", encKeyLo);
+            PrintKV("Encryption Key", encKeyHex);
+            Console.WriteLine(new string('-', 60));
+            PrintKV("CmacKeyhi     ", cmacKeyHi);
+            PrintKV("CmacKeylo     ", cmacKeyLo);
+            PrintKV("CMAC Key      ", cmacKeyHex);
+        }
+
+        /// <summary>
+        /// Print all CTR blocks with identical formatting for both encrypt and decrypt paths.
+        /// 
+        /// Why safe:
+        /// - It preserves the exact label text and order used before.
+        /// - Only centralizes the loop to avoid code duplication and subtle divergences.
+        /// </summary>
+        private static void PrintAesBlocks(AesCtrEncrypt aes, bool decrypt = false)
+        {
+            int blockCount = aes.Blocks.Count();
+            for (int i = 0; i < blockCount; i++)
+            {
+                string counterHex = LowerHex(HexConverter.ByteArrayToHexString(aes.Blocks[i].CounterBlock));
+                string ksHex = LowerHex(HexConverter.ByteArrayToHexString(aes.Blocks[i].KeystreamBlock));
+                string cipherTextPortion = LowerHex(HexConverter.ByteArrayToHexString(aes.Blocks[i].CiphertextPortion));
+                string plainTextPortion = LowerHex(HexConverter.ByteArrayToHexString(aes.Blocks[i].PlaintextPortion));
+
+                // Use a compact, aligned output; large messages remain readable.
+                PrintKV(string.Format("Counter[{0}]          ", i), counterHex);
+                PrintKV(string.Format("Keystream[{0}]        ", i), ksHex);
+
+                if (decrypt == false)
+                {
+                    PrintKV(string.Format("Plaintext[{0}]        ", i), plainTextPortion);
+                    PrintKV(string.Format("CipherTextPortion[{0}]", i), cipherTextPortion);
+                }
+                else
+                {
+                    PrintKV(string.Format("CipherTextPortion[{0}]", i), plainTextPortion);
+                    PrintKV(string.Format("Plaintext[{0}]        ", i), cipherTextPortion);
+                }
+
+                    // Separator line for readability between blocks
+                    Console.WriteLine(new string('-', 60));
+            }
+        }
+
+        // ============================================================================
+        // End of helpers
+        // ============================================================================
     }
 }

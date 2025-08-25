@@ -58,7 +58,7 @@ public static class Compress
             accBits = 0;
         }
 
-        // 3) Optionally reverse bit order in each output byte (to match your expected test vector)
+        // 3) Optionally reverse bit order in each output byte (to match the expected test vector)
         if (reverseOutputByteBits)
         {
             for (int i = 0; i < output.Count; i++)
@@ -73,7 +73,7 @@ public static class Compress
     }
 
     /// <summary>
-    /// Hex-string front-end for FromByteArray. Accepts "0x" and spaces via your HexConverter.
+    /// Hex-string front-end for FromByteArray. Accepts "0x" and spaces via HexConverter.
     /// </summary>
     public static byte[] FromHexString(string hex, bool reverseOutputByteBits = true, int padTrailingZeroBytes = 0)
     {

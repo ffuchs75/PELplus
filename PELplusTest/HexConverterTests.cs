@@ -4,6 +4,103 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace HexConverterTests
 {
     [TestClass]
+    public class HexToByteTests
+    {
+        // --- Helper under test (paste your HexToByte implementation or call your class) ---
+        // For illustration, I reference a static method HexToByte on class HexConverter.
+        // Change "HexConverter.HexToByte" if your method lives elsewhere.
+        private static byte CallHexToByte(string s) => HexConverter.HexToByte(s);
+
+        // -----------------------------
+        // VALID INPUTS
+        // -----------------------------
+
+        [DataTestMethod]
+        // Basic 2-digit hex (uppercase / lowercase)
+        [DataRow("00", (byte)0x00)]
+        [DataRow("ff", (byte)0xFF)]
+        [DataRow("FF", (byte)0xFF)]
+        [DataRow("A3", (byte)0xA3)]
+        [DataRow("a3", (byte)0xA3)]
+        [DataRow("0A", (byte)0x0A)]
+        [DataRow("0a", (byte)0x0A)]
+
+        // With optional "0x"/"0X" prefix
+        [DataRow("0x00", (byte)0x00)]
+        [DataRow("0xFF", (byte)0xFF)]
+        [DataRow("0xff", (byte)0xFF)]
+        [DataRow("0x0A", (byte)0x0A)]
+        [DataRow("0Xa3", (byte)0xA3)]
+
+        // With surrounding whitespace (should be trimmed)
+        [DataRow(" ff ", (byte)0xFF)]
+        [DataRow("  0x0a  ", (byte)0x0A)]
+        public void HexToByte_ValidInputs_ReturnsExpectedByte(string input, byte expected)
+        {
+            // Act
+            var actual = CallHexToByte(input);
+
+            // Assert
+            // Expect exact byte value (0..255).
+            Assert.AreEqual(expected, actual,
+                $"Parsing '{input}' should yield 0x{expected:X2} but got 0x{actual:X2}.");
+        }
+
+        // -----------------------------
+        // INVALID INPUTS
+        // -----------------------------
+
+        [DataTestMethod]
+        // Null / empty / white-space only
+        [DataRow(null)]
+        [DataRow("")]
+        [DataRow(" ")]
+        [DataRow("\t")]
+
+        // Wrong length after optional 0x removal (not exactly 2 hex digits)
+        [DataRow("1")]        // single digit
+        [DataRow("123")]      // 3 digits
+        [DataRow("0x1")]      // 1 digit after 0x
+        [DataRow("0x123")]    // 3 digits after 0x
+        [DataRow("0x")]       // empty after 0x
+
+        // Non-hex characters
+        [DataRow("G1")]
+        [DataRow("0xG1")]
+        [DataRow("ZZ")]
+        [DataRow("--")]
+        public void HexToByte_InvalidInputs_ThrowsArgumentException(string input)
+        {
+            // Act + Assert
+            // We expect an ArgumentException for any malformed or unsupported input format.
+            var ex = Assert.ThrowsException<ArgumentException>(() => CallHexToByte(input));
+
+            // Optional: verify the parameter name if your implementation uses nameof(hex)
+            // Assert.AreEqual("hex", ex.ParamName);
+
+            // Optional: verify that the message is not empty (helps ensure useful diagnostics)
+            StringAssert.Contains(ex.Message, "");
+        }
+
+        // -----------------------------
+        // EDGE-CASE SANITY CHECKS
+        // -----------------------------
+
+        [TestMethod]
+        public void HexToByte_MinMaxBoundary_Returns00AndFF()
+        {
+            // Arrange + Act
+            byte min = CallHexToByte("00");
+            byte max = CallHexToByte("FF");
+
+            // Assert
+            Assert.AreEqual((byte)0x00, min, "Expected 0x00 for '00'.");
+            Assert.AreEqual((byte)0xFF, max, "Expected 0xFF for 'FF'.");
+        }
+    }
+
+
+    [TestClass]
     public class HexConverterUnitTests
     {
         [TestMethod]

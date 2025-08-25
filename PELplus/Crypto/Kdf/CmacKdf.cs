@@ -13,13 +13,15 @@
 /// </summary>
 public sealed class CmacKdf
 {
-    // ===== Final output keys =====
-
     /// <summary>Final 256-bit encryption key = T(1) || T(2)</summary>
     public byte[] EncryptionKey { get; }
+    /// <summary>Final 256-bit encryption key = T(1) || T(2)</summary>
+    public string EncryptionKeyHex => HexConverter.ByteArrayToHexString(EncryptionKey);
 
     /// <summary>Final 256-bit CMAC key = T(3) || T(4)</summary>
     public byte[] CmacKey { get; }
+    /// <summary>Final 256-bit CMAC key = T(3) || T(4)</summary>
+    public string CmacKeyHex => HexConverter.ByteArrayToHexString(CmacKey);
 
     // ===== Debug / intermediate values =====
 
@@ -29,29 +31,53 @@ public sealed class CmacKdf
     /// but using AES-CMAC and masterKey as message.
     /// </summary>
     public byte[] Cmac1a { get; }
+    /// <summary>
+    /// Equivalent to "extract" PRF step 1:
+    /// Cmac1a = PRF(IV, masterKey) — similar role to HMAC(salt, IKM) in HKDF,
+    /// but using AES-CMAC and masterKey as message.
+    /// </summary>
+    public string Cmac1aHex => HexConverter.ByteArrayToHexString(Cmac1a);
 
     /// <summary>
     /// Equivalent to "extract" PRF step 2:
     /// Cmac1b = PRF(IV, Cmac1a || 0x00) — second CMAC to extend PRK to 256 bits.
     /// </summary>
     public byte[] Cmac1b { get; }
+    /// <summary>
+    /// Equivalent to "extract" PRF step 2:
+    /// Cmac1b = PRF(IV, Cmac1a || 0x00) — second CMAC to extend PRK to 256 bits.
+    /// </summary>
+    public string Cmac1bHex => HexConverter.ByteArrayToHexString(Cmac1b);
 
     /// <summary>
     /// Pseudorandom Key (PRK) for expand phase = Cmac1a || Cmac1b (32 bytes).
     /// </summary>
     public byte[] Prk { get; }
+    /// <summary>
+    /// Pseudorandom Key (PRK) for expand phase = Cmac1a || Cmac1b (32 bytes).
+    /// </summary>
+    public string PrkHex => HexConverter.ByteArrayToHexString(Prk);
 
     /// <summary>T(1) = PRF(PRK, 0x01)</summary>
     public byte[] T1 { get; }
+    /// <summary>T(1) = PRF(PRK, 0x01)</summary>
+    public string T1Hex => HexConverter.ByteArrayToHexString(T1);
 
     /// <summary>T(2) = PRF(PRK, T(1) || 0x02)</summary>
     public byte[] T2 { get; }
+    /// <summary>T(2) = PRF(PRK, T(1) || 0x02)</summary>
+    public string T2Hex => HexConverter.ByteArrayToHexString(T2);
 
     /// <summary>T(3) = PRF(PRK, T(2) || 0x03)</summary>
     public byte[] T3 { get; }
+    /// <summary>T(3) = PRF(PRK, T(2) || 0x03)</summary>
+    public string T3Hex => HexConverter.ByteArrayToHexString(T3);
 
     /// <summary>T(4) = PRF(PRK, T(3) || 0x04)</summary>
     public byte[] T4 { get; }
+    /// <summary>T(4) = PRF(PRK, T(3) || 0x04)</summary>
+    public string T4Hex => HexConverter.ByteArrayToHexString(T4);
+
 
     /// <summary>
     /// Derives two 256-bit keys from a 256-bit master key and optional 256-bit IV

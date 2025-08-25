@@ -10,7 +10,7 @@ using System.Web;
 namespace PELplusTest
 {
     [TestClass]
-    public class CompleteExample
+    public class CompleteEncryptionExample
     {
         private readonly string key = "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f";
         private readonly DateTime dateTime = new DateTime(2025, 8, 7, 10, 30, 45, DateTimeKind.Utc);
@@ -84,7 +84,6 @@ namespace PELplusTest
 
             // CMAC
             AesCmac aesCmac = new AesCmac(cmacKey, aesCtrEncrypt.Ciphertext);
-
             Assert.AreEqual(expectedCmac, HexConverter.ByteArrayToHexString(aesCmac.Mac).ToLower());
 
             // CRC

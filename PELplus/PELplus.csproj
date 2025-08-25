@@ -43,10 +43,15 @@
   <ItemGroup>
     <Compile Include="Crypto\AES\AesCmac.cs" />
     <Compile Include="Crypto\AES\AesCtrEncrypt.cs" />
+    <Compile Include="Crypto\Encryption\Decrypt.cs" />
+    <Compile Include="Crypto\Encryption\Encrypt.cs" />
+    <Compile Include="Encoding\Compression\Uncompress.cs" />
     <Compile Include="Encoding\Padding\BytePadRight.cs" />
     <Compile Include="Crypto\Kdf\CmacKdf.cs" />
     <Compile Include="Encoding\Compression\Compress.cs" />
     <Compile Include="Checksums\Crc8.cs" />
+    <Compile Include="Encoding\Pocsag\PocsagNumericDecoder.cs" />
+    <Compile Include="Encoding\Transmission\Transmission.cs" />
     <Compile Include="Time\Epoch2025Timestamp.cs" />
     <Compile Include="Encoding\Hex\HexConverter.cs" />
     <Compile Include="Encoding\Pocsag\PocsagNumericEncoder.cs" />

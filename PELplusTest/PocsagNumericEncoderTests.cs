@@ -12,7 +12,7 @@ namespace CryptoTests
             string inputHex =
                 "d5fa1f0101e8138da6734710d4588476d592025b12f6ae5e6456c2bab026170159d2a8d90a59c7ee4bd8f2e4";
 
-            // Expected HEX after nibble-wise bit reversal (your corrected full output):
+            // Expected HEX after nibble-wise bit reversal 
             string expectedHex =
                 "BAF58F0808718C1B56EC2E80B2A112E6BA9404AD84F657A762A634D5D0468E08A9B451B905A93E772DB1F472";
 
