@@ -50,9 +50,11 @@ PELplus.CLI --license
 
 ```bash
 PELplusCLI.exe --message "Probealarm, Leitstelle nicht anrufen" --key 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --time "2025-08-07 10:30:45"
+```
 
+```bash
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-  PELplus – POCSAG Encryption                           
+  PELplus – POCSAG Encryption                            
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 Message  : Probealarm, Leitstelle nicht anrufen
 UTC time : 2025-08-07 10:30:45
@@ -78,9 +80,9 @@ CmacKeylo     : 19013556e2753eb1f23f7744b603b0e5
 CMAC Key      : 1a6220a89cffa76f327bda8e4cb4c9ec19013556e2753eb1f23f7744b603b0e5
 
 ── Plaintext & compression ─────────────────────────────────────────────────────
-Plaintext bytes (hex)    : 50726f6265616c61726d2c204c6569747374656c6c65206e6963687420616e727566656e
-Compressed bytes (hex)   : 0a9fda3a70cdc34f6cd02334e597ce5e99b374c13b978c597050dda7aece9bb0
-Compressed + padded (hex): 0a9fda3a70cdc34f6cd02334e597ce5e99b374c13b978c597050dda7aece9bb0000000
+Plaintext bytes (hex)    : 50726F6265616C61726D2C204C6569747374656C6C65206E6963687420616E727566656E
+Compressed bytes (hex)   : 0A9FDA3A70CDC34F6CD02334E597CE5E99B374C13B978C597050DDA7AECE9BB0
+Compressed + padded (hex): 0A9FDA3A70CDC34F6CD02334E597CE5E99B374C13B978C597050DDA7AECE9BB0000000
 
 ── AES-CTR details (all blocks) ─────────────────────────────────────────────────────
 Counter[0]          : d5fa1f01010000000000000000000000
@@ -102,6 +104,7 @@ Ciphertext (hex): 3ae2f8f268d024c47d528465f76460865e2362ad28f609cb91d1206c5f694a
 
 ── Checksums ─────────────────────────────────────────────────────
 CMAC (128-bit, hex) over ciphertext: 81256a9a2c8267023bf33a4d9dd7c13c
+CMAC over ciphertext truncated     : 81256a9a
 CRC-8 over IV                      : e8
 
 ── Transmission ─────────────────────────────────────────────────────
@@ -118,7 +121,9 @@ Done.
 
 ```bash
 PELplusCLI.exe --message "U*[58[080871184*6595 574[1[461U04232]U*4126*[]626016*74 645U41[6093-98U84063*[692544931*U7" --key 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --decrypt
+```
 
+```bash
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   PELplus – POCSAG Encryption                            
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -174,7 +179,8 @@ Plaintext HEX uncompressed: 50726f6265616c61726d2c204c6569747374656c6c65206e6963
 Plaintext                 : Probealarm, Leitstelle nicht anrufen
 
 ── CMAC ─────────────────────────────────────────────────────
-Actual CMAC               : 81256a9a
+Actual CMAC               : 81256a9a2c8267023bf33a4d9dd7c13c
+Actual CMAC truncated     : 81256a9a
 Has Valid CMAC            : True
 
 Done.
@@ -186,7 +192,9 @@ Done.
 
 ```bash
 PELplusCLI.exe --message "1fofAQHogSVqmjri+PJo0CTEfVKEZfdkYIZeI2KtKPYJy5HRIGxfaUoinIXe" --key 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --decrypt
+```
 
+```bash
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   PELplus – POCSAG Encryption                            
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
@@ -242,7 +250,8 @@ Plaintext HEX uncompressed: 50726f6265616c61726d2c204c6569747374656c6c65206e6963
 Plaintext                 : Probealarm, Leitstelle nicht anrufen
 
 ── CMAC ─────────────────────────────────────────────────────
-Actual CMAC               : 81256a9a
+Actual CMAC               : 81256a9a2c8267023bf33a4d9dd7c13c
+Actual CMAC truncated     : 81256a9a
 Has Valid CMAC            : True
 
 Done.
@@ -252,7 +261,9 @@ Done.
 
 ```bash
 PELplusCLI.exe --message "Test" --key 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f --decrypt
+```
 
+```bash
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
   PELplus – POCSAG Encryption                           
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛

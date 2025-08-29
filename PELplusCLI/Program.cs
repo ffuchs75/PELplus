@@ -121,6 +121,7 @@ namespace PELplusCLI
                 // -------- 6) CMAC over ciphertext (Encrypt-then-MAC) --------
                 PrintSection("Checksums");
                 PrintKV("CMAC (128-bit, hex) over ciphertext", HexConverter.ByteArrayToHexString(encrypt.AesCmac.Mac).ToLower());
+                PrintKV("CMAC over ciphertext truncated     ", encrypt.AesCmac.MacTruncatedHex.ToLower());
 
                 // -------- 7) CRC-8 over UNPADDED IV --------
                 PrintKV("CRC-8 over IV                      ", encrypt.CrcHex);
@@ -439,55 +440,56 @@ namespace PELplusCLI
         /// </summary>
         private static void decrypt(string message, string keyHex)
         {
-            // -------- Pretty header --------
-            PrintTitle("PELplus – POCSAG Encryption");
-            PrintKV("Message  ", message);
-            PrintKV("Key (hex)", keyHex);
+           
 
-            PrintSection("Extract parameters from transmission");
-            Transmission transmission = new Transmission(message);
 
-            PrintKV("Transmission type    ", transmission.EncodingType.ToString());
-
-            // if the message is not encrypted, exit
-            if (transmission.EncodingType == TransmissionEncoding.Unencrypted)
-            {
-                return;
-            }
-
-            PrintKV("Complete Transmission", transmission.RawFrameHex);
-            PrintKV("IV unpadded          ", transmission.IvUnpaddedHex);
-            PrintKV("IV padded            ", transmission.IvPaddedHex);
-            PrintKV("Timestamp            ", transmission.TimestampHex);
-            PrintKV("Timestamp UTC        ", transmission.TimestampUtc.ToString());
-            PrintKV("Timestamp Local      ", transmission.TimestampLocal.ToString());
-            PrintKV("Key Index            ", transmission.KeyIndexHex);
-            PrintKV("Transmitted Crc8     ", transmission.TransmittedCrc8Hex);
-            PrintKV("Actual Crc8          ", transmission.ActualCrc8Hex);
-            PrintKV("Has Valid Crc8       ", transmission.HasValidCrc8.ToString());
-            PrintKV("Transmitted CMAC     ", transmission.MacTruncHex);
-            PrintKV("Cipher Text          ", transmission.CiphertextHex);
-
-            // check if the crc is valid
-            if (transmission.HasValidCrc8 == false)
-            {
-                Console.WriteLine("\nSince the CRC8 is void, treat the message as unencrypted.");
-                return;
-            }
-
-            // -------- 2) Derive keys via CMAC-KDF (enc key + cmac key) --------
-            CmacKdf kdf = new CmacKdf(keyHex, transmission.IvPaddedHex);
-
-            // Print KDF and expose enc/cmac key hex
-            string encKeyHex, cmacKeyHex;
-            PrintKdfOverview(kdf, out encKeyHex, out cmacKeyHex);
 
             try
             {
                 // decrypt
                 Decrypt decrypt = new Decrypt(message, keyHex);
 
-                // -------- 3) Decrypt --------
+                // -------- Pretty header --------
+                PrintTitle("PELplus – POCSAG Encryption");
+                PrintKV("Message  ", message);
+                PrintKV("Key (hex)", keyHex);
+
+                PrintSection("Extract parameters from transmission");
+                Transmission transmission = decrypt.Transmission;
+
+                PrintKV("Transmission type    ", transmission.EncodingType.ToString());
+
+                // if the message is not encrypted, exit
+                if (transmission.EncodingType == TransmissionEncoding.Unencrypted)
+                {
+                    return;
+                }
+
+                PrintKV("Complete Transmission", transmission.RawFrameHex);
+                PrintKV("IV unpadded          ", transmission.IvUnpaddedHex);
+                PrintKV("IV padded            ", transmission.IvPaddedHex);
+                PrintKV("Timestamp            ", transmission.TimestampHex);
+                PrintKV("Timestamp UTC        ", transmission.TimestampUtc.ToString());
+                PrintKV("Timestamp Local      ", transmission.TimestampLocal.ToString());
+                PrintKV("Key Index            ", transmission.KeyIndexHex);
+                PrintKV("Transmitted Crc8     ", transmission.TransmittedCrc8Hex);
+                PrintKV("Actual Crc8          ", transmission.ActualCrc8Hex);
+                PrintKV("Has Valid Crc8       ", transmission.HasValidCrc8.ToString());
+                PrintKV("Transmitted CMAC     ", transmission.MacTruncHex);
+                PrintKV("Cipher Text          ", transmission.CiphertextHex);
+
+                // check if the crc is valid
+                if (transmission.HasValidCrc8 == false)
+                {
+                    Console.WriteLine("\nSince the CRC8 is void, treat the message as unencrypted.");
+                    return;
+                }
+
+                // Print KDF and expose enc/cmac key hex
+                string encKeyHex, cmacKeyHex;
+                PrintKdfOverview(decrypt.CmacKdf, out encKeyHex, out cmacKeyHex);
+
+
                 PrintSection("Decryption");
 
                 // Print EVERY block (counter & keystream) to support arbitrarily long messages.
@@ -501,18 +503,18 @@ namespace PELplusCLI
                 // get text
                 PrintKV("Plaintext                 ", decrypt.PlainText);
 
-                // -------- 4) CMAC --------
+                // --------  CMAC --------
                 // CMAC
+
+
+
                 PrintSection("CMAC");
-                AesCmac aesCmac = new AesCmac(cmacKeyHex, transmission.CiphertextHex);
+                AesCmac aesCmac = decrypt.AesCmac;
 
-                // Compute once, reuse (avoids duplicate conversions and substring twice)
-                string macFullLower = LowerHex(HexConverter.ByteArrayToHexString(aesCmac.Mac));
-                string macTruncLower = macFullLower.Substring(0, 8);
+                PrintKV("Actual CMAC               ", aesCmac.MacHex.ToLower());
+                PrintKV("Actual CMAC truncated     ", aesCmac.MacTruncatedHex.ToLower());
 
-                PrintKV("Actual CMAC               ", macTruncLower);
-
-                bool hasValidCmac = macTruncLower == transmission.MacTruncHex;
+                bool hasValidCmac = aesCmac.MacTruncatedHex.ToLower() == transmission.MacTruncHex.ToLower();
                 PrintKV("Has Valid CMAC            ", hasValidCmac.ToString());
             }
             catch (Exception ex)

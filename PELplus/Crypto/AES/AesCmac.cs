@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PELplus;
+using System;
 using System.Security.Cryptography;
 
 /// <summary>
@@ -12,6 +13,27 @@ public sealed class AesCmac
     /// The final 16-byte CMAC value computed from the provided key and message.
     /// </summary>
     public byte[] Mac { get; }
+
+    /// <summary>
+    /// The final 16-byte CMAC value computed from the provided key and message.
+    /// </summary>
+    public string MacHex => HexConverter.ByteArrayToHexString(Mac);
+
+    /// <summary>
+    /// shortend machex
+    /// </summary>
+    public byte[] MacTruncated => HexConverter.HexStringToByteArray(MacTruncatedHex);
+
+    /// <summary>
+    /// shortend machex
+    /// </summary>
+    public string MacTruncatedHex
+    {
+        get
+        {
+            return MacHex.Substring(0, Parameters.CmacSize * 2);
+        }
+    }
 
     /// <summary>
     /// Creates a new AES-CMAC computation object and immediately computes the CMAC.

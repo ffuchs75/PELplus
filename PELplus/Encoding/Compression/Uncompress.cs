@@ -58,14 +58,15 @@ public static class Uncompress
             }
         }
 
-        // 3) Leftover bits (<7) should be padding zeros only; discard but sanity-check.
-        if (accBits > 0)
-        {
-            int mask = (1 << accBits) - 1;
-            int leftover = acc & mask;
-            if (leftover != 0)
-                throw new ArgumentException("Non-zero padding bits detected at the end of the packed stream.");
-        }
+        // use this in case you only want to be able to uncompress valid strings, this is less fail safe
+        //// 3) Leftover bits (<7) should be padding zeros only; discard but sanity-check.
+        //if (accBits > 0)
+        //{
+        //    int mask = (1 << accBits) - 1;
+        //    int leftover = acc & mask;
+        //    if (leftover != 0)
+        //        throw new ArgumentException("Non-zero padding bits detected at the end of the packed stream.");
+        //}
 
         // 4) Optionally strip trailing 0x00 bytes from the decoded output
         if (removeTrailingZeros && output.Count > 0)

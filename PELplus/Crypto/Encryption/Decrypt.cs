@@ -10,7 +10,6 @@ namespace PELplus.Crypto.Encryption
 {
     public sealed class Decrypt
     {
-        private readonly byte[] _key;
         private readonly Transmission _transmission;
         private readonly CmacKdf _cmacKdf;
         private readonly AesCtrEncrypt _aesCtrDecrypt;
@@ -50,7 +49,7 @@ namespace PELplus.Crypto.Encryption
         public string PlainText => _plainText;
 
         /// <summary>
-        /// CMAC of cipher text
+        /// actual (calculated) CMAC of cipher text
         /// </summary>
         public AesCmac AesCmac => _aesCmac;
 
@@ -111,11 +110,7 @@ namespace PELplus.Crypto.Encryption
             // calculate the CMAC
             _aesCmac = new AesCmac(_cmacKdf.CmacKeyHex, _transmission.CiphertextHex);
 
-            // Compute once, reuse (avoids duplicate conversions and substring twice)
-            string macFullLower = HexConverter.ByteArrayToHexString(_aesCmac.Mac).ToLower();
-            string macTruncLower = macFullLower.Substring(0, 8);
-
-            _hasValidCmac = macTruncLower == _transmission.MacTruncHex;
+            _hasValidCmac = _aesCmac.MacTruncatedHex.ToLower() == _transmission.MacTruncHex.ToLower();
         }
 
     }

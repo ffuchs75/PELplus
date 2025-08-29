@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PELplus;
+using System;
 
 /// <summary>
 /// Immutable class for converting between a UTC timestamp in seconds since a fixed epoch (2025-01-01 00:00:00 UTC)
@@ -6,11 +7,6 @@
 /// </summary>
 public sealed class Epoch2025Timestamp
 {
-    /// <summary>
-    /// Fixed, hard-coded epoch start (UTC): 2025-01-01 00:00:00
-    /// </summary>
-    public static readonly DateTime EpochStartUtc = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-
     /// <summary>UTC DateTime representation</summary>
     public DateTime UtcTime { get; }
 
@@ -42,11 +38,11 @@ public sealed class Epoch2025Timestamp
         if (utcTime.Kind == DateTimeKind.Local)
             utcTime = utcTime.ToUniversalTime();
 
-        if (utcTime < EpochStartUtc)
+        if (utcTime < Parameters.EpochStartUtc)
             throw new ArgumentOutOfRangeException(nameof(utcTime), "Time must be on or after epoch start.");
 
         UtcTime = utcTime;
-        SecondsSinceEpoch = (uint)(UtcTime - EpochStartUtc).TotalSeconds;
+        SecondsSinceEpoch = (uint)(UtcTime - Parameters.EpochStartUtc).TotalSeconds;
         BytesLittleEndian = BitConverter.GetBytes(SecondsSinceEpoch);
         BytesBigEndian = GetBigEndian(SecondsSinceEpoch);
     }
@@ -63,7 +59,7 @@ public sealed class Epoch2025Timestamp
             ? BitConverter.ToUInt32(secondsBytes, 0)
             : FromBigEndian(secondsBytes);
 
-        UtcTime = EpochStartUtc.AddSeconds(SecondsSinceEpoch);
+        UtcTime = Parameters.EpochStartUtc.AddSeconds(SecondsSinceEpoch);
         BytesLittleEndian = BitConverter.GetBytes(SecondsSinceEpoch);
         BytesBigEndian = GetBigEndian(SecondsSinceEpoch);
     }

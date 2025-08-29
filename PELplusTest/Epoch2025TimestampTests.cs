@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using PELplus;
 
 namespace TimeTests
 {
@@ -37,7 +38,7 @@ namespace TimeTests
         private static void ValidateAllConstructors(DateTime dtUtc)
         {
             // Independent expected values (computed here, not using the class under test)
-            DateTime epoch = Epoch2025Timestamp.EpochStartUtc;
+            DateTime epoch = Parameters.EpochStartUtc;
             Assert.AreEqual(DateTimeKind.Utc, epoch.Kind, "Epoch must be UTC");
 
             if (dtUtc < epoch)

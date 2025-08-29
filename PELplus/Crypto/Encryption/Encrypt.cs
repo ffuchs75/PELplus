@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PELplus;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -216,7 +217,7 @@ public sealed class Encrypt
 
         // calculate IV
         _ivHex = _epoch2025Timestamp.BytesLittleEndianHex + _keyIndexHex;
-        BytePadRight bytePadRight = new BytePadRight(_ivHex, 32);
+        BytePadRight bytePadRight = new BytePadRight(_ivHex, Parameters.IVPaddedSize);
         _ivPaddedHex = bytePadRight.PaddedHex;
 
         // derive keys
@@ -226,7 +227,8 @@ public sealed class Encrypt
         _plainTextBytes= Encoding.UTF8.GetBytes(message);
         _compressedPlainTextBytes = Compress.FromByteArray(_plainTextBytes);  
 
-        BytePadRight compressedPadded = new BytePadRight(_compressedPlainTextBytes, (int)Math.Ceiling((double)_compressedPlainTextBytes.Length / 5) * 5);
+        BytePadRight compressedPadded = new BytePadRight(_compressedPlainTextBytes, 
+            (int)Math.Ceiling((double)_compressedPlainTextBytes.Length / Parameters.POCSAGBlockSize) * Parameters.POCSAGBlockSize);
         _compressedPlainTextBytesPadded = (byte[])compressedPadded.PaddedBytes.Clone();
 
         // encryption
@@ -239,7 +241,7 @@ public sealed class Encrypt
         _crc = Crc8.Compute(_ivHex);
 
         // transmission
-        _transmissionHex = String.Format("{0}{1}{2}{3}", _ivHex, CrcHex, HexConverter.ByteArrayToHexString(_aesCmac.Mac).ToLower().Substring(0, 8), _aesCtrEncrypt.CiphertextHex);
+        _transmissionHex = String.Format("{0}{1}{2}{3}", _ivHex, CrcHex, HexConverter.ByteArrayToHexString(_aesCmac.Mac).ToLower().Substring(0, Parameters.CmacSize * 2), _aesCtrEncrypt.CiphertextHex);
 
         // POCSAG numeric encoding
         PocsagNumericEncoder pocsagNumericEncoder = new PocsagNumericEncoder(_transmissionHex);

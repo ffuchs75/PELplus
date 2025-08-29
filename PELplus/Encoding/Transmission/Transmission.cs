@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PELplus;
+using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -68,10 +69,10 @@ public sealed class Transmission
     /// <summary>1-byte CRC-8 over IV_unpadded (as newly calculated).</summary>
     public byte ActualCrc8 => _actualCrc8;
 
-    /// <summary>4-byte truncated CMAC tag. Defensive copy on get.</summary>
+    /// <summary>transmitted 4-byte truncated CMAC tag. .</summary>
     public byte[] MacTruncated => Copy(_macTruncated);
 
-    /// <summary>Ciphertext bytes (remaining payload). Defensive copy on get.</summary>
+    /// <summary>Ciphertext bytes (remaining payload).</summary>
     public byte[] Ciphertext => Copy(_ciphertext);
 
     /// <summary>
@@ -182,13 +183,13 @@ public sealed class Transmission
 
         byte crc = frameBytes[5];
 
-        var mac = new byte[4];
-        Buffer.BlockCopy(frameBytes, 6, mac, 0, 4);
+        var mac = new byte[Parameters.CmacSize];
+        Buffer.BlockCopy(frameBytes, 6, mac, 0, Parameters.CmacSize);
 
-        int cipherLen = Math.Max(0, frameBytes.Length - 10);
+        int cipherLen = Math.Max(0, frameBytes.Length - 6 - Parameters.CmacSize);
         var ct = new byte[cipherLen];
         if (cipherLen > 0)
-            Buffer.BlockCopy(frameBytes, 10, ct, 0, cipherLen);
+            Buffer.BlockCopy(frameBytes, 6 + Parameters.CmacSize, ct, 0, cipherLen);
 
         var timestamp = new byte[4];
         Buffer.BlockCopy(frameBytes, 0, timestamp, 0, 4);
@@ -204,7 +205,7 @@ public sealed class Transmission
         _timestamp = Copy(timestamp);
         _actualCrc8 = Crc8.Compute(_ivUnpadded);
 
-        BytePadRight bytePadRight = new BytePadRight(iv, 32);
+        BytePadRight bytePadRight = new BytePadRight(iv, Parameters.IVPaddedSize);
         _ivPadded = bytePadRight.PaddedBytes;
     }
 
