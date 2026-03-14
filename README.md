@@ -1,8 +1,8 @@
 # PELplus.CLI
 
-The POCSAG Encryption Library plus Command Line Interface is a **reference implementation** for the POCSAG encryption 
-as described in the draft of the German TR BOS.  
-It was designed purely for **educational and analysis purposes**, **not** for production use.
+The POCSAG Encryption Library plus Command Line Interface is a **reference implementation** for the POCSAG encryption scheme
+described in Appendix E of the German *Technische Richtlinie der Behörden und Organisationen mit Sicherheitsaufgaben: Geräte für die Digitale Funkalarmierung. Stand: Jänner 2026 (TR BOS)* (see https://www.lfs-bw.de/fileadmin/LFS-BW/ueber_uns/aufgaben/pruefstelle/dokumente/TRBOS-Digitale_Alarmierung.pdf). 
+It was designed soley for **educational and analysis purposes** and is **not** intended for production use.
 
 ## Security Disclaimer
 
