@@ -13,6 +13,16 @@ It was designed soley for **educational and analysis purposes** and is **not** i
 > - The code is meant for developers, researchers, or students who want to study the internal workings of the POCSAG encryption.  
 > - There are no guarantees of correctness, confidentiality, integrity, or security.
 
+## Download
+
+- [Download latest release](https://github.com/ffuchs75/PELplus/releases/latest)
+- [All releases](https://github.com/ffuchs75/PELplus/releases)
+
+## Source Code
+
+- [GitHub repository](https://github.com/ffuchs75/PELplus)
+
+
 ## Requirements
 
 - dotNetFramework 4.7 or higher
